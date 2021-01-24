@@ -1,44 +1,41 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int number(char** s) {
-  if (**s >= '0' && **s <= '9') {
-    int n = (**s) - '0';
-    (*s)++;
-    while (**s >= '0' && **s <= '9') {
-      n *= 10;
-      n += (**s) - '0';
-      (*s)++;
-    }
+typedef struct Token {
+  struct Token* next;
+  char* symbol;
+} Token;
+
+void next(Token** s) {
+  *s = (*s)->next;
+}
+
+int number(Token** s) {
+  char c = *((*s)->symbol);
+  if (c >= '0' && c <= '9') {
+    int n =  atoi((*s)->symbol);
+    next(s);
     return n;
   }
 
   return 0;
 }
 
-void next_symbol(char** s) {
-  while (**s == ' ') {
-    *s += 1;
-  }
-}
-
-
-char consume_op(char** s, char op) {
-  char c = **s;
-  if (c == op) {
-    (*s)++;
-    return c;
+int consume_op(Token** s, char op) {
+  if (*s != NULL && *((*s)->symbol) == op) {
+    next(s);
+    return 1;
   }
 
-  return '\0';
-
+  return 0;
 }
 
-int term(char **s) {
-  next_symbol(s);
+int term(Token **s) {
   int left = number(s);
-  next_symbol(s);
-  char op = consume_op(s, '*');
-  if (op == '\0') {
+
+  int success = consume_op(s, '*');
+  if (!success) {
     return left;
   }
 
@@ -47,28 +44,71 @@ int term(char **s) {
   return left * right;
 }
 
-int expression(char **s) {
-  next_symbol(s);
+int expression(Token **s) {
   int left = term(s);
 
-  next_symbol(s);
-  char op = consume_op(s, '+');
-  if (op == '\0') {
+  int success = consume_op(s, '+');
+  if (!success) {
     return left;
   }
 
-  next_symbol(s);
-
   int right = expression(s);
+  return left + right;
+}
 
-  if (op == '+') {
-    return left + right;
+Token* tokenize(char* s) {
+  Token* head = (Token*)malloc(sizeof(Token));
+  head->symbol = "";
+
+  Token* current = head;
+
+  while (*s != '\0') {
+    if (*s == '+' || *s == '*') {
+      Token* new_token = (Token*)malloc(sizeof(Token));
+      new_token->symbol = (char*)malloc(2 * sizeof(char));
+      strncpy(new_token->symbol, s, 1);
+
+      current->next = new_token;
+      current = new_token;
+
+      s++;
+      continue;
+    }
+
+    if (*s >= '0' && *s <= '9') {
+      Token* new_token = (Token*)malloc(sizeof(Token));
+
+      int size;
+      for(size = 1; *(s + size) >= '0' && *(s + size) <= '9'; size++) {}
+
+      new_token->symbol = (char*)malloc((size + 1) * sizeof(char));
+      strncpy(new_token->symbol, s, size);
+
+      current->next = new_token;
+      current = new_token;
+
+      s += size;
+      continue;
+    }
+
+    s++;
   }
-  return -1;
+
+  return head->next;
+}
+
+void print_tokens(Token* head) {
+  while (head != NULL) {
+    printf("`%s` ", head->symbol);
+    head = head->next;
+  }
+  printf("\n");
 }
 
 int calc(char* s) {
-  return expression(&s);
+  Token* head = tokenize(s);
+  // print_tokens(head);
+  return expression(&head);
 }
 
 void test(char *s, int expected) {
