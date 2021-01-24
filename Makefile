@@ -1,5 +1,5 @@
 main: 0.c
-	gcc -g $? -o $@
+	cc -g $? -o $@
 
 .PHONY: clean
 clean:

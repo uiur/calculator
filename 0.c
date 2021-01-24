@@ -2,6 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef enum {
+  OP_ADD,
+  OP_MUL,
+  VAL_NUM
+} NodeKind;
+
+typedef struct Node {
+  NodeKind kind;
+  struct Node* left;
+  struct Node* right;
+  int value;
+} Node;
+
 typedef struct Token {
   struct Token* next;
   char* symbol;
@@ -11,15 +24,18 @@ void next(Token** s) {
   *s = (*s)->next;
 }
 
-int number(Token** s) {
+Node* number(Token** s) {
   char c = *((*s)->symbol);
   if (c >= '0' && c <= '9') {
     int n =  atoi((*s)->symbol);
     next(s);
-    return n;
+    Node* node = (Node*)malloc(sizeof(Node));
+    node->kind = VAL_NUM;
+    node->value = n;
+    return node;
   }
 
-  return 0;
+  return NULL;
 }
 
 int consume_op(Token** s, char op) {
@@ -31,29 +47,40 @@ int consume_op(Token** s, char op) {
   return 0;
 }
 
-int term(Token **s) {
-  int left = number(s);
+Node* term(Token **s) {
+  Node* left = number(s);
 
   int success = consume_op(s, '*');
   if (!success) {
     return left;
   }
 
-  int right = term(s);
+  Node* right = term(s);
 
-  return left * right;
+  Node* node = (Node*)malloc(sizeof(Node));
+  node->kind = OP_MUL;
+  node->left = left;
+  node->right = right;
+
+  return node;
 }
 
-int expression(Token **s) {
-  int left = term(s);
+Node* expression(Token **s) {
+  Node* left = term(s);
 
   int success = consume_op(s, '+');
   if (!success) {
     return left;
   }
 
-  int right = expression(s);
-  return left + right;
+  Node* right = expression(s);
+
+  Node* node = (Node*)malloc(sizeof(Node));
+  node->kind = OP_ADD;
+  node->left = left;
+  node->right = right;
+
+  return node;
 }
 
 Token* tokenize(char* s) {
@@ -105,10 +132,50 @@ void print_tokens(Token* head) {
   printf("\n");
 }
 
+Node* parse(Token* token) {
+  return expression(&token);
+}
+
+void print_node(Node *node) {
+  if (node->kind == OP_ADD || node->kind == OP_MUL) {
+    char op = node->kind == OP_ADD ? '+' : '*';
+
+    printf("(%c ", op);
+    print_node(node->left);
+    printf(" ");
+
+    print_node(node->right);
+    printf(")");
+  }
+
+  if (node->kind == VAL_NUM) {
+    printf("%d", node->value);
+  }
+}
+
+int evaluate(Node* node) {
+  if (node->kind == OP_ADD) {
+    return evaluate(node->left) + evaluate(node->right);
+  }
+
+  if (node->kind == OP_MUL) {
+    return evaluate(node->left) * evaluate(node->right);
+  }
+
+  if (node->kind == VAL_NUM) {
+    return node->value;
+  }
+
+  return 0;
+}
+
 int calc(char* s) {
   Token* head = tokenize(s);
   // print_tokens(head);
-  return expression(&head);
+  Node* node = parse(head);
+  // print_node(node);
+  // puts("");
+  return evaluate(node);
 }
 
 void test(char *s, int expected) {
