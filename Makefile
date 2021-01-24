@@ -1,2 +1,6 @@
 main: 0.c
-	gcc $? -o $@
+	gcc -g $? -o $@
+
+.PHONY: clean
+clean:
+	rm ./main
