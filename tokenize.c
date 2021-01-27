@@ -9,7 +9,7 @@ Token* tokenize(char* s) {
   Token* current = head;
 
   while (*s != '\0') {
-    if (*s == '+' || *s == '*') {
+    if (*s == '+' || *s == '*' || *s == '(' || *s == ')') {
       Token* new_token = (Token*)malloc(sizeof(Token));
       new_token->symbol = (char*)malloc(2 * sizeof(char));
       strncpy(new_token->symbol, s, 1);

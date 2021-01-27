@@ -17,11 +17,23 @@ typedef struct Node {
   int value;
 } Node;
 
+Node* expression(Token **s);
+
 void next(Token** s) {
   *s = (*s)->next;
 }
 
+int consume(Token** s, char op) {
+  if (*s != NULL && *((*s)->symbol) == op) {
+    next(s);
+    return 1;
+  }
+
+  return 0;
+}
+
 Node* number(Token** s) {
+
   char c = *((*s)->symbol);
   if (c >= '0' && c <= '9') {
     int n =  atoi((*s)->symbol);
@@ -35,19 +47,22 @@ Node* number(Token** s) {
   return NULL;
 }
 
-int consume_op(Token** s, char op) {
-  if (*s != NULL && *((*s)->symbol) == op) {
-    next(s);
-    return 1;
+Node* primary(Token** s) {
+  if (consume(s, '(')) {
+    Node* e = expression(s);
+    consume(s, ')');
+
+    return e;
   }
 
-  return 0;
+  return number(s);
 }
 
-Node* term(Token **s) {
-  Node* left = number(s);
 
-  int success = consume_op(s, '*');
+Node* term(Token **s) {
+  Node* left = primary(s);
+
+  int success = consume(s, '*');
   if (!success) {
     return left;
   }
@@ -65,7 +80,7 @@ Node* term(Token **s) {
 Node* expression(Token **s) {
   Node* left = term(s);
 
-  int success = consume_op(s, '+');
+  int success = consume(s, '+');
   if (!success) {
     return left;
   }

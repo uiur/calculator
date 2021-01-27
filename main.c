@@ -8,12 +8,10 @@ void test(char *s, int expected) {
   }
 }
 
-int main() {
-  test("1 + 2", 3);
-  test("10 + 20", 30);
-  test("2 * 3", 6);
-  test("1 + 2 * 3", 7);
-  test("2 * 2 + 3", 7);
-  test("3", 3);
-  test("1234", 1234);
+int main(int argc, char **argv) {
+  for (int i = 1; i < argc; i++) {
+    char *s = argv[i];
+    printf("%d\n", calc(s));
+  }
+  return 0;
 }
